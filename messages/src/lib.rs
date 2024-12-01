@@ -46,6 +46,19 @@ enum MessageType {
     InitOk,
 }
 
+/// Node represents an instance of the distributed system in Maelstorm's
+/// environment.
+pub struct Node {
+    id: NodeId,
+    other_nodes: Vec<NodeId>,
+}
+
+impl Node {
+    pub fn init(id: NodeId, other_nodes: Vec<NodeId>) -> Self {
+        Node { id, other_nodes }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

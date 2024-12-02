@@ -2,5 +2,6 @@ target
 client/demo
 client/doc
 client/lib
+store
 
 .DS_Store

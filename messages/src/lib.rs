@@ -5,13 +5,12 @@
 
 use serde::{Deserialize, Serialize};
 
-type NodeId = String;
 type MessageId = Option<i32>;
 
 /// Message implements the basic RPC json fields for all Maelstorm
 /// communication.
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
-struct Message {
+#[derive(Serialize, Deserialize, Debug, PartialEq, Default)]
+pub struct Message {
     src: String,
     #[serde(rename = "dest")]
     dst: String,
@@ -19,7 +18,7 @@ struct Message {
 }
 
 /// Body represents a Maelstorm RPC's primary payload.
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Default)]
 struct Body {
     #[serde(rename = "type", flatten)]
     kind: MessageType,
@@ -33,29 +32,57 @@ struct Body {
 
 /// MessageType is used to extend the various request & response RPC types
 /// for Maelstorm payload's.
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "snake_case", tag = "type")]
-enum MessageType {
+pub enum MessageType {
     /// The request/response sent to Maelstorm Node's by the test.
     /// This is the first RPC call sent to any Maelstorm Node's and is mainly
     /// used to initialize the Maelstorm's challenege environment.
     Init {
-        node_id: NodeId,
-        node_ids: Vec<NodeId>,
+        node_id: String,
+        node_ids: Vec<String>,
     },
     InitOk,
+
+    Unknown,
 }
 
-/// Node represents an instance of the distributed system in Maelstorm's
-/// environment.
-pub struct Node {
-    id: NodeId,
-    other_nodes: Vec<NodeId>,
+impl Default for MessageType {
+    fn default() -> Self {
+        Self::Unknown
+    }
 }
 
-impl Node {
-    pub fn init(id: NodeId, other_nodes: Vec<NodeId>) -> Self {
-        Node { id, other_nodes }
+impl Message {
+    fn new(src: String, dst: String) -> Self {
+        Message {
+            src,
+            dst,
+            ..Default::default()
+        }
+    }
+
+    pub fn get_type(&self) -> MessageType {
+        self.body.kind.clone()
+    }
+
+    pub fn respond(&self) -> Self {
+        let mut response = Message::new(self.dst.clone(), self.src.clone());
+
+        match self.body.kind {
+            MessageType::Init {
+                node_id: _,
+                node_ids: _,
+            } => {
+                response.body = Body {
+                    kind: MessageType::InitOk,
+                    id: None,
+                    reply_id: self.body.id,
+                }
+            }
+            _ => (),
+        }
+        response
     }
 }
 

@@ -44,6 +44,14 @@ pub enum MessageType {
     },
     InitOk,
 
+    /// Echo request/response sent to Maelstorm Node's by the test.
+    Echo {
+        echo: String,
+    },
+    EchoOk {
+        echo: String,
+    },
+
     Unknown,
 }
 
@@ -69,13 +77,20 @@ impl Message {
     pub fn respond(&self) -> Self {
         let mut response = Message::new(self.dst.clone(), self.src.clone());
 
-        match self.body.kind {
+        match &self.body.kind {
             MessageType::Init {
                 node_id: _,
                 node_ids: _,
             } => {
                 response.body = Body {
                     kind: MessageType::InitOk,
+                    id: None,
+                    reply_id: self.body.id,
+                }
+            }
+            MessageType::Echo { echo } => {
+                response.body = Body {
+                    kind: MessageType::EchoOk { echo: echo.clone() },
                     id: None,
                     reply_id: self.body.id,
                 }
